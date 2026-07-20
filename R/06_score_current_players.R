@@ -154,7 +154,7 @@ board <- bind_cols(stage1, prob_df) %>%
       draft_probability >= draft_probability_threshold
     ),
     projected_round = case_when(
-      projected_drafted == 0L ~ "Low draft probability",
+      projected_drafted == 0L ~ "Low draft confidence",
       conditional_round_tier == "R1" ~ "Round 1",
       conditional_round_tier == "R2_3" ~ "Rounds 2-3",
       conditional_round_tier == "R4_5" ~ "Rounds 4-5",

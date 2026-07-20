@@ -93,8 +93,8 @@ board <- board %>%
     display_group = if_else(projected_drafted == 1, tier_order, 5L)
   ) %>%
   # Use the model's real two-stage prediction. Players projected to be drafted
-  # are ordered by their conditional round range and draft probability. Everyone
-  # below the position threshold follows, ordered by draft probability.
+  # are ordered by their conditional round range and draft confidence. Everyone
+  # below the position threshold follows, ordered by draft confidence.
   arrange(display_group, desc(draft_probability), expected_round_tier_score, board_rank) %>%
   mutate(display_rank = row_number())
 correlations <- read_csv(

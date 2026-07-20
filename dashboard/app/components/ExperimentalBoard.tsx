@@ -128,7 +128,7 @@ export function ExperimentalBoard({
         </div>
         <div className="tableWrap">
           <table>
-            <thead><tr><th>Rank</th><th>Prospect</th><th>Pos</th><th>Draft probability</th><th>Model projection</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Prospect</th><th>Pos</th><th>Draft confidence</th><th>Model projection</th></tr></thead>
             <tbody>{filtered.map(player => <tr key={player.id} className={selected?.id === player.id ? "selected" : ""} onClick={() => setSelectedId(player.id)}>
               <td className="rank">{player.rank}</td>
               <td><button className="prospectSelect" onClick={event => { event.stopPropagation(); setSelectedId(player.id); }}><strong>{player.name}</strong><span>{player.school}</span></button></td>
@@ -138,7 +138,7 @@ export function ExperimentalBoard({
             </tr>)}</tbody>
           </table>
         </div>
-        <div className="tableFoot">Showing {filtered.length} of {players.length} rising juniors · draft probability first, then conditional round range if drafted</div>
+        <div className="tableFoot">Showing {filtered.length} of {players.length} rising juniors · draft confidence first, then conditional round range if drafted</div>
       </div>
 
       {selected && <aside className="prospectCard juniorCard">
@@ -150,7 +150,7 @@ export function ExperimentalBoard({
           <div><span>Model projection:</span><strong>{selected.projectedRange}</strong></div>
           <div><span>{selected.projectedDrafted ? "Range confidence:" : "If drafted:"}</span><strong>{selected.projectedDrafted ? pct(selected.confidence) : tierLabel(selected.tier)}</strong></div>
         </div>
-        <div className="draftChance"><span>Eventual draft probability</span><strong>{pct(selected.draftProbability, 1)}</strong><div className="track"><i style={{width:`${selected.draftProbability*100}%`}}/></div><small>Experimental {selected.position} threshold: {pct(selected.threshold)}</small></div>
+        <div className="draftChance"><span>Eventual draft confidence</span><strong>{pct(selected.draftProbability, 1)}</strong><div className="track"><i style={{width:`${selected.draftProbability*100}%`}}/></div><small>Experimental {selected.position} threshold: {pct(selected.threshold)}</small></div>
         <div className="probabilityLabel"><strong>Round range if drafted</strong><span>Conditional probabilities; together they equal 100%</span></div>
         <div className="probabilities">
           <ProbabilityBar name="Round 1" value={selected.probR1} active={selected.tier === "R1"}/>
