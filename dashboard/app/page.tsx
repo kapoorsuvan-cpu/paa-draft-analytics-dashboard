@@ -39,10 +39,14 @@ const num = (v: unknown, digits = 1) => {
   const n = Number(v);
   return Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: digits }) : "—";
 };
-const label = (v: string) => v
-  .replace(/^jr_/, "Junior ").replace(/^so_/, "Sophomore ")
-  .replace(/^delta_/, "Change in ").replace(/_pct$/, " percentile")
-  .replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+const label = (v: string) => {
+  if (v === "school_drafts_prior_5y") return "School Drafts in Prior 5 Years";
+  if (v === "school_position_drafts_prior_5y") return "Position Drafts from School in Prior 5 Years";
+  return v
+    .replace(/^jr_/, "Junior ").replace(/^so_/, "Sophomore ")
+    .replace(/^delta_/, "Change in ").replace(/_pct$/, " percentile")
+    .replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+};
 const roundFromSlot = (slot: number) => Math.min(7, Math.max(1, Math.ceil(slot / 32)));
 const rangeFromSlot = (slot: number) => slot <= 32 ? "Round 1" : slot <= 96 ? "Rounds 2–3" : slot <= 160 ? "Rounds 4–5" : "Rounds 6–7";
 const DATA_VERSION = "20260720-r8";

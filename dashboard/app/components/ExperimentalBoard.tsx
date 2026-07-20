@@ -36,11 +36,15 @@ const num = (value: unknown, digits = 1) => {
     ? parsed.toLocaleString(undefined, { maximumFractionDigits: digits })
     : "—";
 };
-const featureLabel = (value: string) => value
-  .replace(/^so_/, "Sophomore ")
-  .replace(/_pct$/, " percentile")
-  .replaceAll("_", " ")
-  .replace(/\b\w/g, character => character.toUpperCase());
+const featureLabel = (value: string) => {
+  if (value === "school_drafts_prior_5y") return "School Drafts in Prior 5 Years";
+  if (value === "school_position_drafts_prior_5y") return "Position Drafts from School in Prior 5 Years";
+  return value
+    .replace(/^so_/, "Sophomore ")
+    .replace(/_pct$/, " percentile")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, character => character.toUpperCase());
+};
 const tierLabel = (tier: string) => tier === "R1"
   ? "Round 1"
   : tier === "R2_3"
