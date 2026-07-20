@@ -75,7 +75,7 @@ main{max-width:1360px}.hero{min-height:330px;margin:0 -24px;padding:46px 34px;gr
 @media(max-width:680px){.hero{padding-top:40px;padding-bottom:34px}.heroStats{grid-template-columns:1fr;gap:24px;margin-top:30px}.heroStats .stat,.heroStats .stat:first-child,.heroStats .stat:nth-child(3),.heroStats .stat:last-child{min-height:auto;padding:0 0 22px;border-left:0!important;border-bottom:1px solid rgba(208,222,212,.18)!important}.heroStats .stat:last-child{padding-bottom:0;border-bottom:0!important}}
 
 /* Match the board viewport to the adjacent prospect analysis card. */
-@media(min-width:1051px){.boardLayout{align-items:start}.seniorBoardPanel{display:flex;height:var(--detail-height,auto);min-height:0;flex-direction:column}.seniorBoardPanel .filters,.seniorBoardPanel .tableFoot{flex:none}.seniorBoardPanel .tableWrap{height:0;min-height:0;max-height:none;flex:1 1 auto}.prospectCard{align-self:start}}
+@media(min-width:1051px){.boardLayout{align-items:start}.seniorBoardPanel,.juniorBoardPanel{display:flex;height:var(--detail-height,auto);min-height:0;flex-direction:column}.seniorBoardPanel .filters,.seniorBoardPanel .tableFoot,.juniorBoardPanel .filters,.juniorBoardPanel .tableFoot{flex:none}.seniorBoardPanel .tableWrap,.juniorBoardPanel .tableWrap{height:0;min-height:0;max-height:none;flex:1 1 auto}.prospectCard{align-self:start}}
 
 /* Full-bleed green hero while keeping its content aligned to the page grid. */
 .hero{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding-left:max(24px,calc((100vw - 1312px)/2));padding-right:max(24px,calc((100vw - 1312px)/2))}

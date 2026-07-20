@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   ArrowDown, ArrowUp, BarChart3, FlaskConical, Search, X
 } from "lucide-react";
@@ -65,6 +66,8 @@ export function ExperimentalBoard({
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState("All");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [cardHeight, setCardHeight] = useState<number | null>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const positions = useMemo(
     () => [...new Set(players.map(player => player.position))].sort(),
     [players]
@@ -95,6 +98,16 @@ export function ExperimentalBoard({
     ...selectedFeatures.map(feature => feature.weight)
   );
 
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const updateHeight = () => setCardHeight(Math.ceil(card.getBoundingClientRect().height));
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [selected?.id, selectedFeatures.length]);
+
   if (!players.length) return null;
 
   return <section id="junior-board" className="section juniorSection">
@@ -115,7 +128,7 @@ export function ExperimentalBoard({
       </dl>
     </div>
     <div className="boardLayout">
-      <div className="boardPanel">
+      <div className={`boardPanel${cardHeight ? " juniorBoardPanel" : ""}`} style={cardHeight ? ({ "--detail-height": `${cardHeight}px` } as CSSProperties) : undefined}>
         <div className="filters">
           <label className="search">
             <Search size={17}/>
@@ -141,7 +154,7 @@ export function ExperimentalBoard({
         <div className="tableFoot">Showing {filtered.length} of {players.length} rising juniors · draft confidence first, then conditional round range if drafted</div>
       </div>
 
-      {selected && <aside className="prospectCard juniorCard">
+      {selected && <aside className="prospectCard juniorCard" ref={cardRef}>
         <div className="prospectTop">
           {selected.headshot ? <img src={selected.headshot} alt=""/> : <div className="avatar">{selected.name.split(" ").map(part => part[0]).join("").slice(0, 2)}</div>}
           <div><span className="rankLabel">#{selected.rank} · {selected.eligibility}</span><h3>{selected.name}</h3><p>{selected.school} · {selected.position}{selected.height ? ` · ${selected.height} in` : ""}{selected.weight ? ` · ${selected.weight} lb` : ""}</p></div>
