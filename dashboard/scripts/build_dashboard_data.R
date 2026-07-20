@@ -140,6 +140,42 @@ feature_stats <- feature_meta %>%
 feature_meta <- feature_meta %>%
   left_join(feature_stats, by = c("position", "feature"))
 
+# The custom projection lab accepts raw junior-season stats, then converts
+# position-specific production into the percentile features used by the model.
+historical_juniors <- read_csv(
+  file.path(root, "data", "processed", "historical_junior_dataset.csv"),
+  show_col_types = FALSE,
+  guess_max = Inf
+)
+raw_feature_for <- function(feature) {
+  case_when(
+    feature == "height_position_pct" ~ "height_inches",
+    feature == "weight_position_pct" ~ "weight_lbs",
+    str_ends(feature, "_pct") ~ str_remove(feature, "_pct"),
+    TRUE ~ feature
+  )
+}
+projection_inputs <- feature_meta %>%
+  transmute(
+    position,
+    feature,
+    rawFeature = raw_feature_for(feature),
+    modelScale = if_else(str_ends(feature, "_pct"), "percentile", "raw")
+  ) %>%
+  group_by(position, feature, rawFeature, modelScale) %>%
+  group_modify(~{
+    values <- historical_juniors %>%
+      filter(position == .y$position) %>%
+      pull(all_of(.y$rawFeature)) %>%
+      as.numeric()
+    values <- sort(values[is.finite(values)])
+    tibble(
+      median = if (length(values)) median(values) else 0,
+      values = list(values)
+    )
+  }) %>%
+  ungroup()
+
 feature_names <- unique(feature_meta$feature)
 players <- board %>%
   transmute(
@@ -167,6 +203,12 @@ players <- board %>%
 
 jsonlite::write_json(players, file.path(out_dir, "players.json"), na = "null")
 jsonlite::write_json(feature_meta, file.path(out_dir, "features.json"), na = "null")
+jsonlite::write_json(
+  projection_inputs,
+  file.path(out_dir, "projection_inputs.json"),
+  na = "null",
+  auto_unbox = TRUE
+)
 jsonlite::write_json(round_metrics, file.path(out_dir, "round_metrics.json"), na = "null")
 jsonlite::write_json(position_metrics, file.path(out_dir, "position_metrics.json"), na = "null")
 

@@ -25,6 +25,15 @@ type Feature = {
 
 type Metric = Record<string, string | number>;
 
+type ProjectionInput = {
+  position: string;
+  feature: string;
+  rawFeature: string;
+  modelScale: "percentile" | "raw";
+  median: number;
+  values: number[];
+};
+
 const pct = (v: number, digits = 0) => `${(v * 100).toFixed(digits)}%`;
 const num = (v: unknown, digits = 1) => {
   const n = Number(v);
@@ -38,6 +47,17 @@ const roundFromSlot = (slot: number) => Math.min(7, Math.max(1, Math.ceil(slot /
 const rangeFromSlot = (slot: number) => slot <= 32 ? "Round 1" : slot <= 96 ? "Rounds 2–3" : slot <= 160 ? "Rounds 4–5" : "Rounds 6–7";
 const DATA_VERSION = "20260720-r8";
 const tierLabel = (tier: string) => tier === "R1" ? "Round 1" : tier === "R2_3" ? "Rounds 2-3" : tier === "R4_5" ? "Rounds 4-5" : "Rounds 6-7";
+const percentileRank = (values: number[], value: number) => {
+  if (!values.length || !Number.isFinite(value)) return 0.5;
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (values[middle] < value) low = middle + 1;
+    else high = middle;
+  }
+  return Math.max(0, Math.min(1, low / Math.max(1, values.length - 1)));
+};
 
 function ProbabilityBar({ name, value, active }: { name: string; value: number; active?: boolean }) {
   return <div className={`probRow ${active ? "active" : ""}`}>
@@ -55,6 +75,7 @@ export default function Home() {
   const [sophomoreFeatures, setSophomoreFeatures] = useState<Feature[]>([]);
   const [sophomoreRoundMetrics, setSophomoreRoundMetrics] = useState<Metric[]>([]);
   const [sophomorePositionMetrics, setSophomorePositionMetrics] = useState<Metric[]>([]);
+  const [projectionInputs, setProjectionInputs] = useState<ProjectionInput[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState("All");
@@ -83,10 +104,12 @@ export default function Home() {
       loadJson("/data/sophomore_features.json"),
       loadJson("/data/sophomore_round_metrics.json"),
       loadJson("/data/sophomore_position_metrics.json"),
-    ]).then(([p, f, rm, pm, jp, sf, srm, spm]) => {
+      loadJson("/data/projection_inputs.json"),
+    ]).then(([p, f, rm, pm, jp, sf, srm, spm, pi]) => {
       setPlayers(p); setFeatures(f); setRoundMetrics(rm); setPositionMetrics(pm);
       setJuniorPlayers(jp); setSophomoreFeatures(sf);
       setSophomoreRoundMetrics(srm); setSophomorePositionMetrics(spm);
+      setProjectionInputs(pi);
       setSelectedId(p[0]?.id ?? null);
     }).catch(error => {
       if (error instanceof DOMException && error.name === "AbortError") return;
@@ -109,12 +132,16 @@ export default function Home() {
     () => features.filter(f => f.position === scenarioPosition),
     [features, scenarioPosition]
   );
+  const scenarioInputs = useMemo(
+    () => projectionInputs.filter(input => input.position === scenarioPosition && scenarioFeatures.some(feature => feature.feature === input.feature)),
+    [projectionInputs, scenarioFeatures, scenarioPosition]
+  );
 
   useEffect(() => {
     const next: Record<string, number> = {};
-    features.filter(f => f.position === scenarioPosition).forEach(f => next[f.feature] = f.median);
+    scenarioInputs.forEach(input => next[input.feature] = input.median);
     setScenarioValues(next);
-  }, [scenarioPosition, features]);
+  }, [scenarioInputs]);
 
   useEffect(() => {
     const card = seniorCardRef.current;
@@ -135,12 +162,17 @@ export default function Home() {
     const baseRound = peerRounds.length ? peerRounds[Math.floor(peerRounds.length / 2)] : 5;
     const base = (baseRound - 0.5) * 32;
     const score = fs.reduce((sum, f) => {
-      const z = f.sd > 0 ? ((scenarioValues[f.feature] ?? f.median) - f.mean) / f.sd : 0;
+      const input = scenarioInputs.find(item => item.feature === f.feature);
+      const rawValue = scenarioValues[f.feature] ?? input?.median ?? f.median;
+      const modelValue = input?.modelScale === "percentile"
+        ? percentileRank(input.values, rawValue)
+        : rawValue;
+      const z = f.sd > 0 ? (modelValue - f.mean) / f.sd : 0;
       return sum + Math.max(-2.5, Math.min(2.5, z)) * f.weight * (f.spearman < 0 ? 1 : -1);
     }, 0);
     const slot = Math.round(Math.max(1, Math.min(257, base - score * 44)));
     return { slot, round: roundFromSlot(slot), range: rangeFromSlot(slot) };
-  }, [players, scenarioFeatures, scenarioPosition, scenarioValues]);
+  }, [players, scenarioFeatures, scenarioInputs, scenarioPosition, scenarioValues]);
 
   if (loadError) return <main className="loading" role="alert">{loadError}. Refresh the page to try again.</main>;
   if (!players.length) return <main className="loading"><div className="loader" />Loading the draft boards…</main>;
@@ -194,8 +226,8 @@ export default function Home() {
       <ExperimentalBoard players={juniorPlayers} features={sophomoreFeatures} roundMetrics={sophomoreRoundMetrics} positionMetrics={sophomorePositionMetrics}/>
 
       <section id="projection" className="section projectionSection">
-        <div className="sectionIntro light"><div><span className="sectionNumber">03</span><h2>Custom Position Projection</h2></div><p>Set a rising senior’s junior-season profile and compare it with the historical position signal.</p></div>
-        <div className="projectionGrid"><div className="scenarioForm"><label>Position<select value={scenarioPosition} onChange={e => setScenarioPosition(e.target.value)}>{positions.map(p => <option key={p}>{p}</option>)}</select></label><div className="scenarioInputs">{scenarioFeatures.map(f => <label key={f.feature}><span>{label(f.feature)} <b>{pct(f.weight)}</b></span><input type="number" step="any" value={scenarioValues[f.feature] ?? ""} onChange={e => setScenarioValues(v => ({...v,[f.feature]:Number(e.target.value)}))}/><small>Typical: {num(f.median,2)}</small></label>)}</div></div>
+        <div className="sectionIntro light"><div><span className="sectionNumber">03</span><h2>Custom Position Projection</h2></div><p>Enter raw junior-season stats. The lab converts each input to a position-specific historical percentile before calculating the projection.</p></div>
+        <div className="projectionGrid"><div className="scenarioForm"><label>Position<select value={scenarioPosition} onChange={e => setScenarioPosition(e.target.value)}>{positions.map(p => <option key={p}>{p}</option>)}</select></label><div className="scenarioInputs">{scenarioInputs.map(input => { const feature = scenarioFeatures.find(item => item.feature === input.feature); return <label key={input.feature}><span>{label(input.rawFeature)} <b>{feature ? pct(feature.weight) : ""}</b></span><input type="number" step="any" value={scenarioValues[input.feature] ?? ""} onChange={e => setScenarioValues(v => ({...v,[input.feature]:Number(e.target.value)}))}/><small>Typical: {num(input.median,2)}{input.modelScale === "percentile" ? " · ranked within position" : " · model input"}</small></label>; })}</div></div>
           <div className="scenarioResult"><div className="resultEyebrow"><Gauge size={17}/> Conditional round scenario</div><span className="rangeResult">{scenario.range}</span><strong>Round {scenario.round}</strong><p>This position comparison estimates round range among drafted historical peers. It does not estimate draft confidence or replace the full player model.</p><div className="scenarioScale"><span>Earlier</span><i><b style={{left:`${Math.min(96, Math.max(4, scenario.slot/257*100))}%`}}/></i><span>Later</span></div></div></div>
       </section>
 
