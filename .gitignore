@@ -1,0 +1,18 @@
+.Rhistory
+.RData
+.Rproj.user/
+data/raw/*.rds
+data/processed/*.rds
+models/*.rds
+outputs/*.csv
+pipeline_log.txt
+.Renviron
+.env
+
+# Local Python environments and caches
+.venv*/
+__pycache__/
+*.py[cod]
+
+# Local operating-system files
+.DS_Store
