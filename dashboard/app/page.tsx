@@ -170,7 +170,7 @@ export default function Home() {
       <section id="board" className="section">
         <div className="sectionIntro"><div><span className="sectionNumber">01</span><h2>Rising Senior Board</h2></div><p>Search the updated board and open any prospect for the full probability profile.</p></div>
         <div className="boardLayout">
-          <div className="boardPanel" style={seniorCardHeight ? ({ "--detail-height": `${seniorCardHeight}px` } as CSSProperties) : undefined}>
+          <div className="boardPanel seniorBoardPanel" style={seniorCardHeight ? ({ "--detail-height": `${seniorCardHeight}px` } as CSSProperties) : undefined}>
             <div className="filters">
               <label className="search"><Search size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search player or school" />{query && <button onClick={() => setQuery("")} aria-label="Clear"><X size={15}/></button>}</label>
               <select aria-label="Filter rising seniors by position" value={position} onChange={e => setPosition(e.target.value)}><option>All</option>{positions.map(p => <option key={p}>{p}</option>)}</select>
